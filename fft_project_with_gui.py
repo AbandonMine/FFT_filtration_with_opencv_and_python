@@ -34,7 +34,7 @@ class MainWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Dynamic filter with DFT")
-        print()
+
         self.dispImgWidth = 375
         self.dispImgHeight = 225
         defaultPixMap = QtGui.QPixmap(self.dispImgWidth, self.dispImgHeight)
@@ -79,13 +79,17 @@ class MainWindow(QtWidgets.QWidget):
         self.clearCustomMaskButton = QtWidgets.QPushButton("Clear custom mask")
         self.clearCustomMaskButton.setEnabled(False)
 
+        self.saveImgToFileButton = QtWidgets.QPushButton("Save image to file")
+        self.saveImgToFileButton.setEnabled(False)
+
 
         spacerHeight = (self.orgImgLabel.sizeHint().height() + self.dftTransformViewLabel.sizeHint().height() 
                         + self.imgAfterFiltration.sizeHint().height() + self.dispImgHeight*3 - self.loadImgButton.sizeHint().height() 
                         - self.maskTypeComboBox.sizeHint().height() - self.filterSizeSliderLabel.sizeHint().height() 
                         - self.filterSizeSlider.sizeHint().height() - self.incSliderButton.sizeHint().height()
                         - self.decSliderButton.sizeHint().height()  - self.paintBrushSliderLabel.sizeHint().height()
-                        - self.paintBrushSlider.sizeHint().height() - self.clearCustomMaskButton.sizeHint().height())        
+                        - self.paintBrushSlider.sizeHint().height() - self.clearCustomMaskButton.sizeHint().height()
+                        - self.saveImgToFileButton.sizeHint().height())
         self.spacer = QtWidgets.QSpacerItem(150, spacerHeight, QtWidgets.QSizePolicy.Expanding)
 
         vertcalBox = QtWidgets.QVBoxLayout()
@@ -106,6 +110,7 @@ class MainWindow(QtWidgets.QWidget):
         vertcalBox2.addWidget(self.paintBrushSliderLabel)
         vertcalBox2.addWidget(self.paintBrushSlider)
         vertcalBox2.addWidget(self.clearCustomMaskButton)
+        vertcalBox2.addWidget(self.saveImgToFileButton)
         vertcalBox2.addSpacerItem(self.spacer)
 
         horizontalBox = QtWidgets.QHBoxLayout()
@@ -125,11 +130,12 @@ class MainWindow(QtWidgets.QWidget):
         self.decSliderButton.clicked.connect(self.decButtonClickedHandler)
         self.paintBrushSlider.valueChanged.connect(self.sizeBrushSLiderHandler)
         self.clearCustomMaskButton.clicked.connect(self.clearCustomMaskedButtonClicked)
+        self.saveImgToFileButton.clicked.connect(self.saveFile)
 
     @QtCore.Slot()
     def loadFile(self):
         fileName = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file with photo', 
-                                               (os.path.expanduser('~')+'\Downloads'),"Image files (*.jpg *.png)")
+                                               (os.path.expanduser('~')+'\Desktop'),"Image files (*.jpg *.png)")
         self.img = cv2.imread(fileName[0])
         if self.img is None:
             return
@@ -139,7 +145,15 @@ class MainWindow(QtWidgets.QWidget):
         self.performMaskingAndDisplayResult("None")
         self.performIfftAndDisplayResult()
         self.maskTypeComboBox.setEnabled(True)
-        
+        self.saveImgToFileButton.setEnabled(True)
+
+    @QtCore.Slot()
+    def saveFile(self):
+        normalized_picture = cv2.normalize(self.filtredImg, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+        fileName = QtWidgets.QFileDialog.getSaveFileName(self, 'Pick destination for your saved img', 
+                                               (os.path.expanduser('~')+'\Desktop'),"Image files (*.jpg *.png)")
+        cv2.imwrite(fileName[0], normalized_picture)
+
     @QtCore.Slot()
     def handleFilterChange(self, text):
         if (text == "None") | (text == "Custom"):
@@ -292,7 +306,6 @@ class MainWindow(QtWidgets.QWidget):
             y_pos =  self.dispImgHeight - y_pos
         y_pos = int(y_pos/self.dispImgHeight*self.magImg.shape[0])
         
-
         self.customMask = cv2.circle(self.customMask, (x_pos, y_pos), self.brushSize, 0, -1)
         self.customMask = cv2.circle(self.customMask, (self.magImg.shape[1] - x_pos, y_pos), self.brushSize, 0, -1)
         self.customMask = cv2.circle(self.customMask, (x_pos, self.magImg.shape[0] - y_pos), self.brushSize, 0, -1)
