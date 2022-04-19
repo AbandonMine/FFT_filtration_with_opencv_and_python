@@ -1,8 +1,5 @@
-import sys
-import cv2
-import os
+import sys, cv2, os
 import numpy as np
-import matplotlib.pyplot as plt
 from PySide6 import QtCore, QtWidgets, QtGui
 
 class MouseTracker(QtCore.QObject):
@@ -60,6 +57,7 @@ class MainWindow(QtWidgets.QWidget):
         self.maskType = ["None", "Circle - Inside", "Circle - Outside", "Rectangle - Inside", "Rectangle - Outside", "Custom"]
         self.maskTypeComboBox = QtWidgets.QComboBox(self)
         self.maskTypeComboBox.addItems(self.maskType)
+        self.maskTypeComboBox.setEnabled(False)
         self.filterSizeSliderLabel = QtWidgets.QLabel("Size of the mask:")
         self.filterSizeSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal, self)
         self.filterSizeSlider.setMaximum(100)
@@ -133,11 +131,14 @@ class MainWindow(QtWidgets.QWidget):
         fileName = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file with photo', 
                                                (os.path.expanduser('~')+'\Downloads'),"Image files (*.jpg *.png)")
         self.img = cv2.imread(fileName[0])
+        if self.img is None:
+            return
         self.imgGray = cv2.cvtColor(self.img.astype('uint8'), cv2.COLOR_RGB2GRAY)
         self.setAsGreyPixmap(self.imgGray, self.orgImg)
         self.performFft()
         self.performMaskingAndDisplayResult("None")
         self.performIfftAndDisplayResult()
+        self.maskTypeComboBox.setEnabled(True)
         
     @QtCore.Slot()
     def handleFilterChange(self, text):
